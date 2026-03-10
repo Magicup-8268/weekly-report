@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주간업무보고서 - Live Sync</title>
+    <title>주간업무보고서 - 실시간 동기화</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     
@@ -21,7 +21,7 @@
         }
         * { font-family: 'Noto Sans KR', sans-serif; }
         .material-section { break-inside: avoid; margin-bottom: 2rem; padding: 1.5rem; background-color: #ffffff; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
-        .gradient-header-bg { background: linear-gradient(135deg, var(--accent-color-start) 0%, var(--accent-color-end) 100%); padding: 2.5rem; border-radius: 1rem; color: white; position: relative; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .gradient-header-bg { background: linear-gradient(135deg, var(--accent-color-start) 0%, var(--accent-color-end) 100%); padding: 2.5rem; border-radius: 1rem; color: white; position: relative; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .section-heading { border-bottom: 3px solid var(--accent-color-light); padding-bottom: 0.5rem; margin-bottom: 1.5rem; font-family: 'Playfair Display', serif !important; font-weight: 700; color: #1F2937; display: flex; align-items: center; }
         .section-heading i { margin-right: 0.75rem; color: var(--accent-color); }
         .accent-border { border-left: 5px solid var(--accent-color); padding-left: 1rem; background-color: #F8FAFC; }
@@ -29,70 +29,59 @@
         @page { margin: 0; }
         @media print {
             .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { padding: 0.5cm 1.5cm 1.5cm 1.5cm !important; font-size: 11pt; line-height: 1.6; background-color: transparent !important; }
-            .material-section { box-shadow: none !important; border: 1px solid #e5e7eb !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .gradient-header-bg { background: linear-gradient(135deg, var(--accent-color-start) 0%, var(--accent-color-end) 100%) !important; }
+            body { padding: 0.5cm 1.5cm; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
-        .print-only { display: none; }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-2 max-w-7xl">
         <div class="text-center mb-8 no-print">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">
-                <i class="fas fa-tasks text-blue-700 mr-3"></i> 주간 업무 보고서 <span class="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded ml-2">Live Sync</span>
-            </h1>
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">주간 업무 보고서 <span class="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded ml-2">Live Sync</span></h1>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div class="bg-white rounded-lg shadow-lg p-6 no-print">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6"><i class="fas fa-edit text-blue-500 mr-2"></i> 정보 입력</h2>
                 <form id="documentForm" class="space-y-6" onsubmit="return false;">
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="documentTitle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="보고서 제목">
-                        <input type="text" id="authorInfo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="작성자/부서">
+                        <input type="text" id="documentTitle" class="w-full px-3 py-2 border rounded-md" placeholder="보고서 제목">
+                        <input type="text" id="authorInfo" class="w-full px-3 py-2 border rounded-md" placeholder="작성자/부서">
                     </div>
-                    <input type="date" id="releaseDate" class="w-full px-3 py-2 border border-gray-300 rounded-md mt-4">
-                    <textarea id="thisWeekResult" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-md mt-4" placeholder="금주 업무 계획"></textarea>
-                    <textarea id="nextWeekPlan" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-md mt-4" placeholder="차주 업무 계획"></textarea>
-                    <textarea id="issues" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md mt-4" placeholder="이슈 및 건의사항"></textarea>
+                    <input type="date" id="releaseDate" class="w-full px-3 py-2 border rounded-md mt-4">
+                    <textarea id="thisWeekResult" rows="5" class="w-full px-3 py-2 border rounded-md mt-4" placeholder="금주 업무 계획"></textarea>
+                    <textarea id="nextWeekPlan" rows="5" class="w-full px-3 py-2 border rounded-md mt-4" placeholder="차주 업무 계획"></textarea>
+                    <textarea id="issues" rows="3" class="w-full px-3 py-2 border rounded-md mt-4" placeholder="이슈 및 건의사항"></textarea>
                     
-                    <button type="button" id="printButton" class="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 font-semibold transition">
-                        <i class="fas fa-print mr-2"></i> PDF 저장 (인쇄)
+                    <button onclick="window.print()" class="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 font-semibold">
+                        <i class="fas fa-file-pdf mr-2"></i> PDF로 저장
                     </button>
-                    <p class="text-xs text-center text-gray-400">내용은 실시간으로 클라우드에 자동 저장됩니다.</p>
+                    <p class="text-xs text-center text-gray-400 mt-2">입력 시 실시간으로 클라우드에 자동 저장 및 동기화됩니다.</p>
                 </form>
             </div>
 
             <div class="bg-white rounded-lg shadow-lg p-8">
-                <div class="flex items-center justify-between mb-6 no-print">
-                    <h2 class="text-2xl font-bold text-gray-800"><i class="fas fa-file-signature text-green-600 mr-2"></i> 미리보기</h2>
-                </div>
                 <div id="documentPreview" class="document-output"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // [필독] 이 부분의 YOUR_... 값들을 수석님의 Firebase 콘솔 값으로 교체하세요.
+        // 1. Firebase 설정 (본인의 정보로 반드시 교체하세요)
         const firebaseConfig = {
             apiKey: "AIzaSyBS-7QWUiItODQnW1jK78mIGr302jiTHNU",
-  	    authDomain: "weekly-report-ed40f.firebaseapp.com",
-	    databaseURL: "https://weekly-report-ed40f-default-rtdb.firebaseio.com",
-	    projectId: "weekly-report-ed40f",
-	    storageBucket: "weekly-report-ed40f.firebasestorage.app",
-	    messagingSenderId: "1036283806531",
-	    appId: "1:1036283806531:web:6818693a686230a6b465f6",
-	    measurementId: "G-4K9BC4HER0"
+  authDomain: "weekly-report-ed40f.firebaseapp.com",
+  databaseURL: "https://weekly-report-ed40f-default-rtdb.firebaseio.com",
+  projectId: "weekly-report-ed40f",
+  storageBucket: "weekly-report-ed40f.firebasestorage.app",
+  messagingSenderId: "1036283806531",
+  appId: "1:1036283806531:web:6818693a686230a6b465f6",
+  measurementId: "G-4K9BC4HER0"
         };
 
-        // Firebase 초기화
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const docRef = database.ref('weekly_report/current');
 
-        // 입력 시 실시간 데이터 전송
+        // 2. 입력 시 실시간 데이터 서버 전송
         document.querySelectorAll('input, textarea').forEach(el => {
             el.addEventListener('input', () => {
                 const data = {};
@@ -103,12 +92,13 @@
             });
         });
 
-        // 데이터 수신 및 화면 업데이트 (실시간 동기화)
+        // 3. 서버 데이터 변경 시 실시간 수신 및 화면 업데이트
         docRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 for (const id in data) {
                     const el = document.getElementById(id);
+                    // 현재 사용자가 입력 중인 필드는 덮어쓰지 않음 (커서 튕김 방지)
                     if (el && el !== document.activeElement) { 
                         el.value = data[id];
                     }
@@ -125,41 +115,26 @@
             const nextWeek = document.getElementById('nextWeekPlan').value || '';
             const issues = document.getElementById('issues').value || '';
 
-            const formattedIssues = issues.split('\n').join('<br>');
-
             document.getElementById('documentPreview').innerHTML = `
-                <div class="fade-in">
-                    <div class="gradient-header-bg text-center mb-8">
-                        <h1 class="text-4xl font-bold mb-2">${title}</h1>
-                        <p class="text-lg opacity-90">${author}</p>
-                        <p class="text-sm mt-4 opacity-75">보고일: ${date ? new Date(date).toLocaleDateString('ko-KR') : '-'}</p>
-                    </div>
-                    <div class="material-section">
-                        <h3 class="section-heading"><i class="fas fa-check-double"></i> 금주 업무 계획</h3>
-                        <div class="accent-border py-2 whitespace-pre-wrap text-gray-700">${thisWeek}</div>
-                    </div>
-                    <div class="material-section">
-                        <h3 class="section-heading"><i class="fas fa-rocket"></i> 차주 업무 계획</h3>
-                        <div class="accent-border py-2 whitespace-pre-wrap text-gray-700">${nextWeek}</div>
-                    </div>
-                    <div class="material-section">
-                        <h3 class="section-heading"><i class="fas fa-lightbulb"></i> 이슈 및 특이사항</h3>
-                        <p class="text-gray-700 italic">${formattedIssues}</p>
-                    </div>
-                    <div class="text-center text-gray-400 text-xs mt-12 print-only">
-                        <p>본 문서는 ${new Date().toLocaleDateString('ko-KR')}에 생성되었습니다.</p>
-                    </div>
+                <div class="gradient-header-bg text-center mb-8">
+                    <h1 class="text-4xl font-bold mb-2">${title}</h1>
+                    <p class="text-lg opacity-90">${author}</p>
+                    <p class="text-sm mt-4 opacity-75">보고일: ${date}</p>
+                </div>
+                <div class="material-section">
+                    <h3 class="section-heading"><i class="fas fa-check-double"></i> 금주 업무 계획</h3>
+                    <div class="accent-border py-2 whitespace-pre-wrap text-gray-700">${thisWeek}</div>
+                </div>
+                <div class="material-section">
+                    <h3 class="section-heading"><i class="fas fa-rocket"></i> 차주 업무 계획</h3>
+                    <div class="accent-border py-2 whitespace-pre-wrap text-gray-700">${nextWeek}</div>
+                </div>
+                <div class="material-section">
+                    <h3 class="section-heading"><i class="fas fa-lightbulb"></i> 이슈 및 특이사항</h3>
+                    <p class="text-gray-700 italic">${issues.replace(/\n/g, '<br>')}</p>
                 </div>
             `;
         }
-
-        // 모바일/PC 인쇄 버튼 이벤트
-        document.getElementById('printButton').addEventListener('click', () => {
-            window.print();
-        });
-
-        // 초기 데이터 로드
-        window.onload = generateDocument;
     </script>
 </body>
 </html>
