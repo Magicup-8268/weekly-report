@@ -3,138 +3,872 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주간업무보고서 - 실시간 동기화</title>
+    <title>주간 업무 보고서 - Real-time</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
-    
+
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
+    <!-- PDF 직접 생성 -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800&display=swap');
+
         :root {
             --accent-color: #1E40AF;
-            --accent-color-light: #DBEAFE;
-            --accent-color-start: #1E40AF;
-            --accent-color-end: #3B82F6;
+            --accent-color-2: #3B82F6;
+            --accent-light: #DBEAFE;
+            --bg-color: #F3F4F6;
+            --text-main: #1F2937;
+            --text-sub: #6B7280;
+            --line-color: #DCE7F7;
+            --green-color: #2FA36B;
+            --green-hover: #26885A;
+            --gray-btn: #6B7280;
+            --gray-btn-hover: #4B5563;
         }
-        * { font-family: 'Noto Sans KR', sans-serif; }
-        .material-section { break-inside: avoid; margin-bottom: 2rem; padding: 1.5rem; background-color: #ffffff; border-radius: 0.75rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
-        .gradient-header-bg { background: linear-gradient(135deg, var(--accent-color-start) 0%, var(--accent-color-end) 100%); padding: 2.5rem; border-radius: 1rem; color: white; position: relative; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .section-heading { border-bottom: 3px solid var(--accent-color-light); padding-bottom: 0.5rem; margin-bottom: 1.5rem; font-family: 'Playfair Display', serif !important; font-weight: 700; color: #1F2937; display: flex; align-items: center; }
-        .section-heading i { margin-right: 0.75rem; color: var(--accent-color); }
-        .accent-border { border-left: 5px solid var(--accent-color); padding-left: 1rem; background-color: #F8FAFC; }
 
-        @page { margin: 0; }
+        * {
+            font-family: 'Noto Sans KR', sans-serif;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+        }
+
+        .card {
+            background: #FFFFFF;
+            border-radius: 0.9rem;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+            border: 1px solid #E5E7EB;
+        }
+
+        .input-title {
+            color: #1F2937;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .input-title i {
+            color: #4F7DF0;
+        }
+
+        .sub-head {
+            color: var(--text-sub);
+            font-weight: 500;
+            margin-top: 0.6rem;
+        }
+
+        .form-group-title {
+            color: #1F2937;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin-bottom: 0.65rem;
+        }
+
+        .form-group-title i {
+            color: #3454D1;
+            width: 16px;
+            text-align: center;
+        }
+
+        .form-divider {
+            height: 3px;
+            background: linear-gradient(90deg, #D7E5FF 0%, #EAF2FF 100%);
+            border-radius: 999px;
+            margin-bottom: 1.25rem;
+        }
+
+        .section-wrap {
+            margin-top: 1.4rem;
+            padding-top: 0.2rem;
+        }
+
+        .section-gap {
+            margin-top: 1.7rem;
+            padding-top: 0.2rem;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #4B5563;
+            margin-bottom: 0.55rem;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border: 1px solid #CBD5E1;
+            border-radius: 0.6rem;
+            outline: none;
+            transition: all 0.15s ease;
+            background: #FFFFFF;
+        }
+
+        .input-control:focus {
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+        }
+
+        .textarea-control {
+            resize: vertical;
+            min-height: 110px;
+            line-height: 1.65;
+        }
+
+        .preview-header {
+            background: linear-gradient(135deg, #2F49C8 0%, #4B7CF3 100%);
+            border-radius: 1.15rem;
+            color: #FFFFFF;
+            padding: 2.6rem 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .preview-section {
+            background: #FFFFFF;
+            border-radius: 0.9rem;
+            padding: 1.45rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #EEF2F7;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+
+        .section-label {
+            color: #1F2937;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid #DBEAFE;
+            padding-bottom: 0.55rem;
+        }
+
+        .section-label i {
+            color: #3454D1;
+            font-size: 0.88rem;
+        }
+
+        .content-box {
+            border-left: 4px solid #3454D1;
+            padding: 0.85rem 0 0.85rem 1rem;
+            background-color: #F8FAFC;
+            white-space: pre-wrap;
+            color: #334155;
+            min-height: 42px;
+            line-height: 1.7;
+        }
+
+        .content-box.italic-empty {
+            font-style: italic;
+            color: #64748B;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 0.6rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #3552D7;
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover {
+            background: #2842BB;
+        }
+
+        .btn-secondary {
+            background: #4E7BE6;
+            color: #FFFFFF;
+        }
+
+        .btn-secondary:hover {
+            background: #3968D6;
+        }
+
+        .btn-gray {
+            background: #6B7280;
+            color: #FFFFFF;
+        }
+
+        .btn-gray:hover {
+            background: #4B5563;
+        }
+
+        .btn-green {
+            background: var(--green-color);
+            color: #FFFFFF;
+        }
+
+        .btn-green:hover {
+            background: var(--green-hover);
+        }
+
+        .btn-link-reset {
+            background: transparent;
+            color: #6B7280;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .btn-link-reset:hover {
+            color: #374151;
+        }
+
+        .top-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.4rem;
+        }
+
+        .date-text {
+            letter-spacing: 0.01em;
+        }
+
+        @page {
+            size: auto;
+            margin: 10mm;
+        }
+
         @media print {
-            .no-print { display: none !important; }
-            body { padding: 0.5cm 1.5cm; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            header,
+            footer,
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                background: #FFFFFF !important;
+            }
+
+            .container {
+                max-width: none !important;
+                width: 100% !important;
+            }
+
+            .grid {
+                display: block !important;
+            }
+
+            #printArea {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+
+            .card,
+            .preview-section {
+                box-shadow: none !important;
+            }
+
+            .preview-header,
+            .section-label,
+            .content-box {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        .pdf-export-mode .no-print,
+        body.pdf-export-mode .no-print {
+            display: none !important;
+        }
+
+        .pdf-export-mode body,
+        body.pdf-export-mode {
+            background: #FFFFFF !important;
+        }
+
+        .pdf-export-mode #printArea,
+        body.pdf-export-mode #printArea {
+            box-shadow: none !important;
+        }
+
+        /* PDF 저장 시에만 압축 레이아웃 적용 */
+        body.pdf-compact-mode #printArea {
+            padding: 0.9rem !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        body.pdf-compact-mode .preview-header {
+            padding: 1.25rem 1rem !important;
+            margin-bottom: 0.9rem !important;
+            border-radius: 0.95rem !important;
+        }
+
+        body.pdf-compact-mode #viewTitle {
+            font-size: 2rem !important;
+            line-height: 1.1 !important;
+            margin-bottom: 0.35rem !important;
+        }
+
+        body.pdf-compact-mode #viewAuthor {
+            font-size: 1.2rem !important;
+            line-height: 1.2 !important;
+        }
+
+        body.pdf-compact-mode .preview-header p {
+            margin-top: 0.65rem !important;
+            font-size: 0.95rem !important;
+        }
+
+        body.pdf-compact-mode .preview-section {
+            padding: 0.95rem 1rem !important;
+            margin-bottom: 0.75rem !important;
+        }
+
+        body.pdf-compact-mode .section-label {
+            margin-bottom: 0.55rem !important;
+            padding-bottom: 0.3rem !important;
+            font-size: 1rem !important;
+        }
+
+        body.pdf-compact-mode .content-box {
+            padding: 0.55rem 0 0.55rem 0.8rem !important;
+            line-height: 1.45 !important;
+            font-size: 0.95rem !important;
+            min-height: 28px !important;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="container mx-auto px-4 py-2 max-w-7xl">
+<body class="py-8 md:py-10">
+    <div class="container mx-auto px-4 max-w-7xl">
         <div class="text-center mb-8 no-print">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">주간 업무 보고서 <span class="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded ml-2">Live Sync</span></h1>
+            <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 flex justify-center items-center gap-3">
+                <i class="fas fa-tasks text-blue-700"></i>
+                주간 업무 보고서
+            </h1>
+            <p class="sub-head text-base md:text-lg">주간 업무 보고서 전문 양식입니다</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white rounded-lg shadow-lg p-6 no-print">
-                <form id="documentForm" class="space-y-6" onsubmit="return false;">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="documentTitle" class="w-full px-3 py-2 border rounded-md" placeholder="보고서 제목">
-                        <input type="text" id="authorInfo" class="w-full px-3 py-2 border rounded-md" placeholder="작성자/부서">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
+            <!-- 좌측 입력 영역 -->
+            <div class="card p-6 md:p-8 no-print">
+                <h2 class="text-xl md:text-2xl input-title">
+                    <i class="fas fa-edit"></i>
+                    정보 입력
+                </h2>
+
+                <form id="reportForm" class="space-y-5">
+                    <div class="section-wrap">
+                        <div class="form-group-title">
+                            <i class="fas fa-info-circle"></i>
+                            기본 정보
+                        </div>
+                        <div class="form-divider"></div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="documentTitle" class="input-label">보고서 제목</label>
+                                <input type="text" id="documentTitle" class="input-control" placeholder="3월 2주차 업무보고">
+                            </div>
+                            <div>
+                                <label for="authorInfo" class="input-label">작성자/부서</label>
+                                <input type="text" id="authorInfo" class="input-control" placeholder="이길용수석 / 제어팀">
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label for="releaseDate" class="input-label">보고 일자</label>
+                            <input type="date" id="releaseDate" class="input-control">
+                        </div>
                     </div>
-                    <input type="date" id="releaseDate" class="w-full px-3 py-2 border rounded-md mt-4">
-                    <textarea id="thisWeekResult" rows="5" class="w-full px-3 py-2 border rounded-md mt-4" placeholder="금주 업무 계획"></textarea>
-                    <textarea id="nextWeekPlan" rows="5" class="w-full px-3 py-2 border rounded-md mt-4" placeholder="차주 업무 계획"></textarea>
-                    <textarea id="issues" rows="3" class="w-full px-3 py-2 border rounded-md mt-4" placeholder="이슈 및 건의사항"></textarea>
-                    
-                    <button onclick="window.print()" class="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 font-semibold">
-                        <i class="fas fa-file-pdf mr-2"></i> PDF로 저장
-                    </button>
-                    <p class="text-xs text-center text-gray-400 mt-2">입력 시 실시간으로 클라우드에 자동 저장 및 동기화됩니다.</p>
+
+                    <div class="section-gap">
+                        <div class="form-group-title">
+                            <i class="fas fa-check-circle"></i>
+                            금주 업무 계획
+                        </div>
+                        <div class="form-divider"></div>
+                        <textarea id="thisWeekResult" rows="5" class="input-control textarea-control" placeholder="내용을 입력하세요..."></textarea>
+                    </div>
+
+                    <div class="section-gap">
+                        <div class="form-group-title">
+                            <i class="fas fa-calendar-day"></i>
+                            차주 업무 계획
+                        </div>
+                        <div class="form-divider"></div>
+                        <textarea id="nextWeekPlan" rows="5" class="input-control textarea-control" placeholder="내용을 입력하세요..."></textarea>
+                    </div>
+
+                    <div class="section-gap">
+                        <div class="form-group-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            이슈 및 건의사항
+                        </div>
+                        <div class="form-divider"></div>
+                        <textarea id="issues" rows="4" class="input-control textarea-control" placeholder="특이사항을 입력하세요..."></textarea>
+                    </div>
+
+                    <div class="pt-4 space-y-3">
+                        <button type="button" id="updateReportBtn" class="btn btn-primary w-full py-4 text-base">
+                            <i class="fas fa-sync-alt"></i>
+                            보고서 업데이트
+                        </button>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" id="saveJsonBtn" class="btn btn-secondary w-full py-3.5">
+                                <i class="fas fa-download"></i>
+                                데이터 저장
+                            </button>
+                            <button type="button" id="loadJsonBtn" class="btn btn-gray w-full py-3.5">
+                                <i class="fas fa-upload"></i>
+                                데이터 불러오기
+                            </button>
+                        </div>
+
+                        <div class="text-center pt-1">
+                            <button type="button" id="resetFormBtn" class="btn btn-link-reset px-2 py-1">
+                                양식 초기화
+                            </button>
+                        </div>
+                    </div>
+
+                    <input type="file" id="jsonFileInput" accept=".json,application/json" class="hidden">
                 </form>
             </div>
 
-            <div class="bg-white rounded-lg shadow-lg p-8">
-                <div id="documentPreview" class="document-output"></div>
+            <!-- 우측 미리보기 영역 -->
+            <div id="printArea" class="card p-6 md:p-8 bg-white">
+                <div class="top-toolbar no-print">
+                    <h2 class="text-xl md:text-2xl font-extrabold text-gray-800 flex items-center gap-3">
+                        <i class="fas fa-file-pdf text-green-600"></i>
+                        미리보기
+                    </h2>
+                    <button type="button" id="printPdfBtn" class="btn btn-green px-5 py-3 text-base">
+                        <i class="fas fa-print"></i>
+                        PDF 저장
+                    </button>
+                </div>
+
+                <div class="preview-header">
+                    <h1 id="viewTitle" class="text-3xl md:text-5xl font-extrabold mb-3">주간 업무 보고서</h1>
+                    <p id="viewAuthor" class="text-lg md:text-2xl font-semibold opacity-95">작성자 정보</p>
+                    <p class="text-sm md:text-lg mt-5 font-semibold opacity-85">
+                        보고일:
+                        <span id="viewDate" class="date-text">-</span>
+                    </p>
+                </div>
+
+                <div class="preview-section">
+                    <h3 class="section-label">
+                        <i class="fas fa-check-double"></i>
+                        금주 업무 계획
+                    </h3>
+                    <div id="viewThisWeek" class="content-box"></div>
+                </div>
+
+                <div class="preview-section">
+                    <h3 class="section-label">
+                        <i class="fas fa-paper-plane"></i>
+                        차주 업무 계획
+                    </h3>
+                    <div id="viewNextWeek" class="content-box"></div>
+                </div>
+
+                <div class="preview-section">
+                    <h3 class="section-label">
+                        <i class="fas fa-lightbulb"></i>
+                        이슈 및 특이사항
+                    </h3>
+                    <div id="viewIssues" class="content-box italic-empty"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 1. Firebase 설정 (본인의 정보로 반드시 교체하세요)
         const firebaseConfig = {
             apiKey: "AIzaSyBS-7QWUiItODQnW1jK78mIGr302jiTHNU",
-  authDomain: "weekly-report-ed40f.firebaseapp.com",
-  databaseURL: "https://weekly-report-ed40f-default-rtdb.firebaseio.com",
-  projectId: "weekly-report-ed40f",
-  storageBucket: "weekly-report-ed40f.firebasestorage.app",
-  messagingSenderId: "1036283806531",
-  appId: "1:1036283806531:web:6818693a686230a6b465f6",
-  measurementId: "G-4K9BC4HER0"
+            authDomain: "weekly-report-ed40f.firebaseapp.com",
+            databaseURL: "https://weekly-report-ed40f-default-rtdb.firebaseio.com",
+            projectId: "weekly-report-ed40f",
+            storageBucket: "weekly-report-ed40f.firebasestorage.app",
+            messagingSenderId: "1036283806531",
+            appId: "1:1036283806531:web:6818693a686230a6b465f6",
+            measurementId: "G-4K9BC4HER0"
         };
 
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const docRef = database.ref('weekly_report/current');
 
-        // 2. 입력 시 실시간 데이터 서버 전송
-        document.querySelectorAll('input, textarea').forEach(el => {
-            el.addEventListener('input', () => {
-                const data = {};
-                document.querySelectorAll('input, textarea').forEach(item => {
-                    data[item.id] = item.value;
-                });
-                docRef.set(data); 
+        const FIELD_IDS = [
+            'documentTitle',
+            'authorInfo',
+            'releaseDate',
+            'thisWeekResult',
+            'nextWeekPlan',
+            'issues'
+        ];
+
+        function getTodayString() {
+            return new Date().toISOString().slice(0, 10);
+        }
+
+        function formatDateKr(dateString) {
+            if (!dateString) return '-';
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString;
+
+            const year = parts[0];
+            const month = Number(parts[1]);
+            const day = Number(parts[2]);
+
+            if (!year || !month || !day) return dateString;
+            return `${year}. ${month}. ${day}.`;
+        }
+
+        function collectFormData() {
+            const data = {};
+            FIELD_IDS.forEach((id) => {
+                const el = document.getElementById(id);
+                data[id] = el ? el.value : '';
             });
+            return data;
+        }
+
+        function applyDataToForm(data) {
+            FIELD_IDS.forEach((id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (data[id] !== undefined && el !== document.activeElement) {
+                    el.value = data[id];
+                }
+            });
+        }
+
+        function renderContentBox(elementId, text, emptyText = '') {
+            const target = document.getElementById(elementId);
+            if (!target) return;
+
+            const value = (text || '').trim();
+            if (value) {
+                target.textContent = value;
+                target.classList.remove('italic-empty');
+            } else {
+                target.textContent = emptyText;
+                if (emptyText) {
+                    target.classList.add('italic-empty');
+                } else {
+                    target.classList.remove('italic-empty');
+                }
+            }
+        }
+
+        function updatePreview(data) {
+            document.getElementById('viewTitle').textContent = data.documentTitle || '주간 업무 보고서';
+            document.getElementById('viewAuthor').textContent = data.authorInfo || '작성자 정보';
+            document.getElementById('viewDate').textContent = formatDateKr(data.releaseDate || '');
+            renderContentBox('viewThisWeek', data.thisWeekResult || '', '');
+            renderContentBox('viewNextWeek', data.nextWeekPlan || '', '');
+            renderContentBox('viewIssues', data.issues || '', '특이사항 없음');
+        }
+
+        function saveToFirebase() {
+            const data = collectFormData();
+            docRef.set(data);
+            updatePreview(data);
+        }
+
+        function initializeDefaultState() {
+            const releaseDateEl = document.getElementById('releaseDate');
+            if (!releaseDateEl.value) {
+                releaseDateEl.value = getTodayString();
+            }
+        }
+
+        function downloadJsonFile() {
+            const data = collectFormData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: 'application/json;charset=utf-8'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const today = getTodayString();
+            const safeTitle = (data.documentTitle || 'weekly-report').replace(/[\\/:*?"<>|]/g, '_');
+
+            a.href = url;
+            a.download = `${safeTitle}_${today}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadJsonFile(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const parsed = JSON.parse(event.target.result);
+
+                    FIELD_IDS.forEach((id) => {
+                        if (parsed[id] === undefined || parsed[id] === null) {
+                            parsed[id] = '';
+                        } else {
+                            parsed[id] = String(parsed[id]);
+                        }
+                    });
+
+                    if (!parsed.releaseDate) {
+                        parsed.releaseDate = getTodayString();
+                    }
+
+                    applyDataToForm(parsed);
+                    updatePreview(parsed);
+                    docRef.set(parsed);
+                } catch (error) {
+                    alert('JSON 파일 형식이 올바르지 않습니다.');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file, 'utf-8');
+        }
+
+        function resetFormData() {
+            const confirmed = window.confirm('현재 입력 내용을 초기화하시겠습니까?');
+            if (!confirmed) return;
+
+            FIELD_IDS.forEach((id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.value = '';
+            });
+
+            document.getElementById('releaseDate').value = getTodayString();
+
+            const resetData = collectFormData();
+            updatePreview(resetData);
+            docRef.set(resetData);
+        }
+
+        function buildPdfFileName() {
+            const title = (document.getElementById('documentTitle').value || '주간업무보고서').trim();
+            const date = document.getElementById('releaseDate').value || getTodayString();
+            const safeTitle = title.replace(/[\\/:*?"<>|]/g, '_');
+            return `${safeTitle}_${date}.pdf`;
+        }
+
+        async function generatePdfWithoutHeaderFooter() {
+            const button = document.getElementById('printPdfBtn');
+            const originalHtml = button.innerHTML;
+
+            try {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PDF 생성 중';
+
+                const target = document.getElementById('printArea');
+
+                /* PDF 저장 시에만 압축 모드 적용 */
+                document.body.classList.add('pdf-export-mode', 'pdf-compact-mode');
+
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                const canvas = await html2canvas(target, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: -window.scrollY
+                });
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+
+                const margin = 7;
+                const printableWidth = pageWidth - (margin * 2);
+                const printableHeight = pageHeight - (margin * 2);
+
+                const fullImgHeightMm = (canvas.height * printableWidth) / canvas.width;
+                const imgData = canvas.toDataURL('image/png');
+
+                const singlePageFitThreshold = printableHeight * 1.18;
+
+                if (fullImgHeightMm <= singlePageFitThreshold) {
+                    const fittedWidth = Math.min(
+                        printableWidth,
+                        (printableHeight * canvas.width) / canvas.height
+                    );
+                    const fittedHeight = (canvas.height * fittedWidth) / canvas.width;
+                    const x = (pageWidth - fittedWidth) / 2;
+
+                    pdf.addImage(
+                        imgData,
+                        'PNG',
+                        x,
+                        margin,
+                        fittedWidth,
+                        fittedHeight,
+                        undefined,
+                        'FAST'
+                    );
+                } else {
+                    const pxPerMm = canvas.width / printableWidth;
+                    const pageCanvasHeightPx = Math.floor(printableHeight * pxPerMm);
+
+                    let renderedHeight = 0;
+                    let pageIndex = 0;
+
+                    while (renderedHeight < canvas.height) {
+                        const sliceHeight = Math.min(
+                            pageCanvasHeightPx,
+                            canvas.height - renderedHeight
+                        );
+
+                        const pageCanvas = document.createElement('canvas');
+                        pageCanvas.width = canvas.width;
+                        pageCanvas.height = sliceHeight;
+
+                        const pageCtx = pageCanvas.getContext('2d');
+                        pageCtx.fillStyle = '#ffffff';
+                        pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+                        pageCtx.drawImage(
+                            canvas,
+                            0, renderedHeight, canvas.width, sliceHeight,
+                            0, 0, canvas.width, sliceHeight
+                        );
+
+                        const pageImgData = pageCanvas.toDataURL('image/png');
+                        const sliceHeightMm = sliceHeight / pxPerMm;
+
+                        if (pageIndex > 0) {
+                            pdf.addPage();
+                        }
+
+                        pdf.addImage(
+                            pageImgData,
+                            'PNG',
+                            margin,
+                            margin,
+                            printableWidth,
+                            sliceHeightMm,
+                            undefined,
+                            'FAST'
+                        );
+
+                        renderedHeight += sliceHeight;
+                        pageIndex += 1;
+                    }
+                }
+
+                pdf.save(buildPdfFileName());
+            } catch (error) {
+                console.error('PDF 생성 오류:', error);
+                alert('PDF 생성 중 오류가 발생했습니다.');
+            } finally {
+                document.body.classList.remove('pdf-export-mode', 'pdf-compact-mode');
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+            }
+        }
+
+        document.querySelectorAll('input, textarea').forEach((el) => {
+            if (el.type === 'file') return;
+
+            const handler = () => {
+                const data = collectFormData();
+                docRef.set(data);
+                updatePreview(data);
+            };
+
+            el.addEventListener('input', handler);
+            el.addEventListener('change', handler);
         });
 
-        // 3. 서버 데이터 변경 시 실시간 수신 및 화면 업데이트
+        document.getElementById('updateReportBtn').addEventListener('click', saveToFirebase);
+        document.getElementById('saveJsonBtn').addEventListener('click', downloadJsonFile);
+        document.getElementById('loadJsonBtn').addEventListener('click', () => {
+            document.getElementById('jsonFileInput').click();
+        });
+
+        document.getElementById('jsonFileInput').addEventListener('change', (e) => {
+            loadJsonFile(e.target.files[0]);
+            e.target.value = '';
+        });
+
+        document.getElementById('resetFormBtn').addEventListener('click', resetFormData);
+        document.getElementById('printPdfBtn').addEventListener('click', generatePdfWithoutHeaderFooter);
+
         docRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                for (const id in data) {
-                    const el = document.getElementById(id);
-                    // 현재 사용자가 입력 중인 필드는 덮어쓰지 않음 (커서 튕김 방지)
-                    if (el && el !== document.activeElement) { 
-                        el.value = data[id];
-                    }
-                }
-                generateDocument();
+                applyDataToForm(data);
+                updatePreview(data);
             }
         });
 
-        function generateDocument() {
-            const title = document.getElementById('documentTitle').value || '업무 주간 보고서';
-            const author = document.getElementById('authorInfo').value || '성함 / 부서명';
-            const date = document.getElementById('releaseDate').value;
-            const thisWeek = document.getElementById('thisWeekResult').value || '';
-            const nextWeek = document.getElementById('nextWeekPlan').value || '';
-            const issues = document.getElementById('issues').value || '';
+        window.onload = async () => {
+            initializeDefaultState();
 
-            document.getElementById('documentPreview').innerHTML = `
-                <div class="gradient-header-bg text-center mb-8">
-                    <h1 class="text-4xl font-bold mb-2">${title}</h1>
-                    <p class="text-lg opacity-90">${author}</p>
-                    <p class="text-sm mt-4 opacity-75">보고일: ${date}</p>
-                </div>
-                <div class="material-section">
-                    <h3 class="section-heading"><i class="fas fa-check-double"></i> 금주 업무 계획</h3>
-                    <div class="accent-border py-2 whitespace-pre-wrap text-gray-700">${thisWeek}</div>
-                </div>
-                <div class="material-section">
-                    <h3 class="section-heading"><i class="fas fa-rocket"></i> 차주 업무 계획</h3>
-                    <div class="accent-border py-2 whitespace-pre-wrap text-gray-700">${nextWeek}</div>
-                </div>
-                <div class="material-section">
-                    <h3 class="section-heading"><i class="fas fa-lightbulb"></i> 이슈 및 특이사항</h3>
-                    <p class="text-gray-700 italic">${issues.replace(/\n/g, '<br>')}</p>
-                </div>
-            `;
-        }
+            try {
+                const snapshot = await docRef.once('value');
+                const data = snapshot.val();
+
+                if (data) {
+                    if (!data.releaseDate) {
+                        data.releaseDate = getTodayString();
+                    }
+                    applyDataToForm(data);
+                    updatePreview(data);
+                } else {
+                    const initialData = collectFormData();
+                    if (!initialData.releaseDate) {
+                        initialData.releaseDate = getTodayString();
+                        document.getElementById('releaseDate').value = initialData.releaseDate;
+                    }
+                    updatePreview(initialData);
+                    docRef.set(initialData);
+                }
+            } catch (error) {
+                console.error('초기 데이터 로드 오류:', error);
+                const fallbackData = collectFormData();
+                if (!fallbackData.releaseDate) {
+                    fallbackData.releaseDate = getTodayString();
+                    document.getElementById('releaseDate').value = fallbackData.releaseDate;
+                }
+                updatePreview(fallbackData);
+            }
+        };
     </script>
 </body>
 </html>
