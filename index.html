@@ -300,62 +300,71 @@
             }
         }
 
-        .pdf-export-mode .no-print,
-        body.pdf-export-mode .no-print {
+        /* PDF 렌더링 전용 오프스크린 영역 */
+        .pdf-render-host {
+            position: fixed;
+            left: -100000px;
+            top: 0;
+            width: 860px;
+            padding: 0;
+            margin: 0;
+            background: #FFFFFF;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .pdf-render-host .no-print {
             display: none !important;
         }
 
-        .pdf-export-mode body,
-        body.pdf-export-mode {
+        .pdf-render-paper {
+            width: 794px !important;
+            min-width: 794px !important;
+            max-width: 794px !important;
+            margin: 0 !important;
             background: #FFFFFF !important;
-        }
-
-        .pdf-export-mode #printArea,
-        body.pdf-export-mode #printArea {
+            border: none !important;
             box-shadow: none !important;
+            padding: 0.9rem !important;
+            border-radius: 0 !important;
         }
 
         /* PDF 저장 시에만 압축 레이아웃 적용 */
-        body.pdf-compact-mode #printArea {
-            padding: 0.9rem !important;
-            border: none !important;
-            box-shadow: none !important;
-        }
-
-        body.pdf-compact-mode .preview-header {
+        .pdf-render-host .preview-header {
             padding: 1.25rem 1rem !important;
             margin-bottom: 0.9rem !important;
             border-radius: 0.95rem !important;
         }
 
-        body.pdf-compact-mode #viewTitle {
+        .pdf-render-host #viewTitle {
             font-size: 2rem !important;
             line-height: 1.1 !important;
             margin-bottom: 0.35rem !important;
         }
 
-        body.pdf-compact-mode #viewAuthor {
+        .pdf-render-host #viewAuthor {
             font-size: 1.2rem !important;
             line-height: 1.2 !important;
         }
 
-        body.pdf-compact-mode .preview-header p {
+        .pdf-render-host .preview-header p {
             margin-top: 0.65rem !important;
             font-size: 0.95rem !important;
         }
 
-        body.pdf-compact-mode .preview-section {
+        .pdf-render-host .preview-section {
             padding: 0.95rem 1rem !important;
             margin-bottom: 0.75rem !important;
+            box-shadow: none !important;
         }
 
-        body.pdf-compact-mode .section-label {
+        .pdf-render-host .section-label {
             margin-bottom: 0.55rem !important;
             padding-bottom: 0.3rem !important;
             font-size: 1rem !important;
         }
 
-        body.pdf-compact-mode .content-box {
+        .pdf-render-host .content-box {
             padding: 0.55rem 0 0.55rem 0.8rem !important;
             line-height: 1.45 !important;
             font-size: 0.95rem !important;
@@ -684,28 +693,61 @@
             return `${safeTitle}_${date}.pdf`;
         }
 
+        function createPdfRenderClone() {
+            const source = document.getElementById('printArea');
+            const host = document.createElement('div');
+            host.className = 'pdf-render-host';
+
+            const clone = source.cloneNode(true);
+            clone.removeAttribute('id');
+            clone.classList.add('pdf-render-paper');
+
+            host.appendChild(clone);
+            document.body.appendChild(host);
+
+            return { host, clone };
+        }
+
+        async function waitForFontsReady() {
+            try {
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready;
+                }
+            } catch (error) {
+                console.warn('폰트 로딩 대기 중 경고:', error);
+            }
+        }
+
         async function generatePdfWithoutHeaderFooter() {
             const button = document.getElementById('printPdfBtn');
             const originalHtml = button.innerHTML;
+            let host = null;
 
             try {
                 button.disabled = true;
                 button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PDF 생성 중';
 
-                const target = document.getElementById('printArea');
+                const data = collectFormData();
+                updatePreview(data);
 
-                /* PDF 저장 시에만 압축 모드 적용 */
-                document.body.classList.add('pdf-export-mode', 'pdf-compact-mode');
+                const renderTarget = createPdfRenderClone();
+                host = renderTarget.host;
+                const clone = renderTarget.clone;
 
+                await waitForFontsReady();
                 await new Promise(resolve => setTimeout(resolve, 200));
 
-                const canvas = await html2canvas(target, {
+                const canvas = await html2canvas(clone, {
                     scale: 2,
                     useCORS: true,
                     backgroundColor: '#ffffff',
                     logging: false,
                     scrollX: 0,
-                    scrollY: -window.scrollY
+                    scrollY: 0,
+                    windowWidth: 1200,
+                    windowHeight: clone.scrollHeight,
+                    width: clone.scrollWidth,
+                    height: clone.scrollHeight
                 });
 
                 const { jsPDF } = window.jspdf;
@@ -713,14 +755,12 @@
 
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
-
                 const margin = 7;
                 const printableWidth = pageWidth - (margin * 2);
                 const printableHeight = pageHeight - (margin * 2);
 
                 const fullImgHeightMm = (canvas.height * printableWidth) / canvas.width;
                 const imgData = canvas.toDataURL('image/png');
-
                 const singlePageFitThreshold = printableHeight * 1.18;
 
                 if (fullImgHeightMm <= singlePageFitThreshold) {
@@ -796,7 +836,9 @@
                 console.error('PDF 생성 오류:', error);
                 alert('PDF 생성 중 오류가 발생했습니다.');
             } finally {
-                document.body.classList.remove('pdf-export-mode', 'pdf-compact-mode');
+                if (host && host.parentNode) {
+                    host.parentNode.removeChild(host);
+                }
                 button.disabled = false;
                 button.innerHTML = originalHtml;
             }
